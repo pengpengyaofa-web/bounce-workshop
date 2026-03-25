@@ -1,0 +1,2035 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>弹跳球工坊 | BounceCode Workshop</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --black: #0a0a0a;
+            --dark: #111111;
+            --card-bg: #1a1a1a;
+            --text: #e0e0e0;
+            --text-dim: #888888;
+            --accent-cyan: #00f5ff;
+            --accent-pink: #ff0093;
+            --accent-blue: #0066ff;
+            --accent-purple: #8800ff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--black);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        /* Hacker Background */
+        #hacker-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.15;
+            background: 
+                linear-gradient(rgba(0, 255, 0, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 0, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+        }
+        
+        #matrix-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.1;
+        }
+
+        @keyframes rainbowShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        /* Custom Cursor */
+        .cursor {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--accent-cyan);
+            border-radius: 50%;
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999;
+            transition: transform 0.1s ease;
+            mix-blend-mode: difference;
+        }
+        
+        .cursor-dot {
+            width: 6px;
+            height: 6px;
+            background: var(--accent-pink);
+            border-radius: 50%;
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999;
+        }
+        
+        .cursor-trail {
+            width: 30px;
+            height: 30px;
+            background: radial-gradient(circle, rgba(0,245,255,0.3) 0%, transparent 70%);
+            border-radius: 50%;
+            position: fixed;
+            pointer-events: none;
+            z-index: 9998;
+            transition: all 0.15s ease-out;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.8; }
+            50% { opacity: 1; }
+        }
+
+        @keyframes gradientBorder {
+            0% { border-color: #ff0093; }
+            25% { border-color: #0066ff; }
+            50% { border-color: #00f5ff; }
+            75% { border-color: #8800ff; }
+            100% { border-color: #ff0093; }
+        }
+
+        .header {
+            position: relative;
+            padding: 60px 20px 40px;
+            text-align: center;
+            background: radial-gradient(ellipse at center top, rgba(0,102,255,0.1) 0%, transparent 60%);
+        }
+
+        .logo {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 3.5rem;
+            font-weight: 900;
+            background: linear-gradient(90deg, var(--accent-cyan), var(--accent-pink), var(--accent-blue), var(--accent-purple));
+            background-size: 300% 300%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: rainbowShift 4s ease infinite;
+            letter-spacing: 4px;
+            margin-bottom: 15px;
+        }
+
+        .tagline {
+            font-size: 1rem;
+            color: var(--text-dim);
+            letter-spacing: 8px;
+            text-transform: uppercase;
+        }
+
+        .lang-switch {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: var(--card-bg);
+            border: 1px solid var(--accent-cyan);
+            color: var(--accent-cyan);
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.85rem;
+            transition: all 0.3s;
+        }
+
+        .lang-switch:hover {
+            background: var(--accent-cyan);
+            color: var(--black);
+        }
+
+        .demo-section {
+            display: flex;
+            justify-content: center;
+            padding: 40px 20px;
+        }
+
+        .demo-container {
+            position: relative;
+            width: 320px;
+            height: 320px;
+            border-radius: 50%;
+            background: var(--black);
+            box-shadow:
+                0 0 60px rgba(0,245,255,0.2),
+                0 0 120px rgba(255,0,147,0.1),
+                inset 0 0 60px rgba(0,0,0,0.8);
+            animation: pulse 3s ease-in-out infinite;
+        }
+
+        .demo-border {
+            position: absolute;
+            top: -8px;
+            left: -8px;
+            right: -8px;
+            bottom: -8px;
+            border-radius: 50%;
+            border: 4px solid;
+            animation: gradientBorder 4s linear infinite;
+        }
+
+        .demo-canvas {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 60px;
+            padding: 40px 20px;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--accent-cyan);
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            margin-top: 5px;
+            letter-spacing: 2px;
+        }
+
+        .products-section {
+            padding: 60px 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.8rem;
+            text-align: center;
+            margin-bottom: 50px;
+            color: var(--text);
+            position: relative;
+        }
+
+        .section-title::after {
+            content: '';
+            display: block;
+            width: 100px;
+            height: 2px;
+            background: linear-gradient(90deg, var(--accent-pink), var(--accent-cyan));
+            margin: 15px auto 0;
+        }
+
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 30px;
+        }
+
+        .product-card {
+            background: var(--card-bg);
+            border: 1px solid #2a2a2a;
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+        }
+
+        .product-card:hover {
+            transform: translateY(-8px);
+            border-color: var(--accent-cyan);
+            box-shadow: 0 20px 60px rgba(0,245,255,0.15);
+        }
+
+        .product-preview {
+            height: 320px;
+            background: var(--black);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .product-preview canvas {
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        .product-preview video {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .product-badge {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: var(--accent-pink);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            z-index: 10;
+        }
+
+        .product-info {
+            padding: 20px;
+        }
+
+        .product-name {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+            color: var(--text);
+        }
+
+        .product-desc {
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .product-tags {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+
+        .tag {
+            background: rgba(0,245,255,0.1);
+            color: var(--accent-cyan);
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            border: 1px solid rgba(0,245,255,0.3);
+        }
+
+        .product-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 15px;
+            border-top: 1px solid #2a2a2a;
+        }
+
+        .product-price {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.4rem;
+            color: var(--accent-cyan);
+        }
+
+        .product-price span {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+        }
+
+        .buy-btn {
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+            color: var(--black);
+            border: none;
+            padding: 10px 24px;
+            border-radius: 6px;
+            font-family: inherit;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .buy-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(0,245,255,0.4);
+        }
+
+        .bundle-section {
+            padding: 80px 20px;
+            background: linear-gradient(180deg, transparent, rgba(0,102,255,0.05), transparent);
+        }
+
+        .bundle-card {
+            max-width: 700px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            border: 2px solid;
+            border-image: linear-gradient(90deg, var(--accent-pink), var(--accent-cyan), var(--accent-purple)) 1;
+            padding: 40px;
+            text-align: center;
+            position: relative;
+        }
+
+        .bundle-card::before {
+            content: '🔥🔥 ULTIMATE BUNDLE';
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, var(--accent-pink), var(--accent-purple));
+            color: white;
+            padding: 6px 20px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            white-space: nowrap;
+        }
+
+        .bundle-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2rem;
+            margin-bottom: 15px;
+            color: var(--text);
+        }
+
+        .bundle-desc {
+            color: var(--text-dim);
+            margin-bottom: 30px;
+            line-height: 1.8;
+        }
+
+        .bundle-price {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 3rem;
+            color: var(--accent-cyan);
+            margin-bottom: 10px;
+        }
+
+        .bundle-original {
+            text-decoration: line-through;
+            color: var(--text-dim);
+            font-size: 1.2rem;
+            margin-bottom: 30px;
+        }
+
+        .bundle-buy-btn {
+            background: linear-gradient(135deg, var(--accent-pink), var(--accent-purple));
+            color: white;
+            border: none;
+            padding: 16px 48px;
+            border-radius: 8px;
+            font-family: inherit;
+            font-weight: 700;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            letter-spacing: 1px;
+        }
+
+        .bundle-buy-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 40px rgba(255,0,147,0.4);
+        }
+
+        .payment-section {
+            padding: 60px 20px;
+            max-width: 600px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .payment-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            margin-bottom: 30px;
+        }
+
+        .payment-methods {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .payment-method {
+            background: var(--card-bg);
+            border: 1px solid #2a2a2a;
+            padding: 20px 30px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.3s;
+        }
+
+        .payment-method:hover {
+            border-color: var(--accent-cyan);
+        }
+
+        .usdt-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #26a17b, #1a7d5e);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+
+        .contact-section {
+            padding: 60px 20px;
+            text-align: center;
+        }
+
+        .contact-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.3rem;
+            margin-bottom: 20px;
+            color: var(--text);
+        }
+
+        .contact-email {
+            color: var(--accent-cyan);
+            font-size: 1.1rem;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .contact-email:hover {
+            color: var(--accent-pink);
+        }
+
+        .footer {
+            padding: 40px 20px;
+            text-align: center;
+            border-top: 1px solid #2a2a2a;
+            margin-top: 60px;
+        }
+
+        .footer-text {
+            color: var(--text-dim);
+            font-size: 0.85rem;
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.95);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--card-bg);
+            border: 2px solid var(--accent-cyan);
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 480px;
+            width: 100%;
+            text-align: center;
+            position: relative;
+            margin: auto;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: var(--text-dim);
+            font-size: 1.8rem;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .modal-close:hover {
+            color: var(--text);
+        }
+
+        .modal-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            color: var(--accent-cyan);
+        }
+
+        .qr-container {
+            margin: 15px 0;
+        }
+
+        .qr-image {
+            width: 160px;
+            height: 160px;
+            border-radius: 8px;
+            margin: 10px auto;
+            display: block;
+        }
+
+        .wallet-address {
+            background: var(--black);
+            padding: 12px;
+            border-radius: 6px;
+            margin: 10px 0;
+            word-break: break-all;
+            font-size: 0.8rem;
+            color: var(--accent-cyan);
+            border: 1px solid #2a2a2a;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .copy-btn {
+            background: var(--accent-cyan);
+            color: var(--black);
+            border: none;
+            padding: 10px 24px;
+            border-radius: 6px;
+            font-family: inherit;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 5px;
+            transition: all 0.3s;
+        }
+
+        .copy-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .network-btn {
+            border: 2px solid;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: 600;
+            transition: all 0.3s;
+            margin: 5px;
+        }
+
+        .network-btn.active {
+            transform: scale(1.05);
+        }
+
+        .network-btn.trc20 {
+            border-color: #26a17b;
+            background: transparent;
+            color: #26a17b;
+        }
+
+        .network-btn.trc20.active {
+            background: #26a17b;
+            color: white;
+        }
+
+        .network-btn.erc20 {
+            border-color: #627eea;
+            background: transparent;
+            color: #627eea;
+        }
+
+        .network-btn.erc20.active {
+            background: #627eea;
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .logo {
+                font-size: 2.2rem;
+                letter-spacing: 2px;
+            }
+
+            .stats {
+                gap: 30px;
+            }
+
+            .stat-number {
+                font-size: 2rem;
+            }
+
+            .bundle-price {
+                font-size: 2.2rem;
+            }
+
+            .modal {
+                padding: 20px;
+            }
+
+            .qr-image {
+                width: 140px;
+                height: 140px;
+            }
+        }
+
+        /* Image Modal */
+        #imageModal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.95);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #imageModal.active {
+            display: flex;
+        }
+    </style>
+</head>
+<body>
+    <!-- Hacker/Matrix Background -->
+    <canvas id="matrix-canvas"></canvas>
+    <div id="hacker-bg"></div>
+    
+    <!-- Custom Cursor Elements -->
+    <div class="cursor" id="cursor"></div>
+    <div class="cursor-dot" id="cursorDot"></div>
+    <div class="cursor-trail" id="cursorTrail"></div>
+    
+    <header class="header">
+        <button class="lang-switch" id="langSwitch" onclick="toggleLanguage()">中文</button>
+        <h1 class="logo" data-zh="弹跳球工坊" data-en="BounceCode Workshop">弹跳球工坊</h1>
+        <p class="tagline" data-zh="Python 弹跳球代码合集" data-en="Python Bouncing Ball Code Collection">Python 弹跳球代码合集</p>
+    </header>
+
+    <section class="demo-section">
+        <div class="demo-container">
+            <div class="demo-border"></div>
+            <canvas class="demo-canvas" id="mainDemo"></canvas>
+        </div>
+    </section>
+
+    <!-- Social Proof -->
+    <section style="background: linear-gradient(180deg, transparent, rgba(255,0,147,0.05), transparent); padding: 40px 20px; margin-bottom: 20px;">
+        <div style="max-width: 800px; margin: 0 auto; text-align: center;">
+            <!-- YouTube Stats Image -->
+            <img src="youtube-stats.jpg.png" alt="YouTube Channel Stats" 
+                 style="max-width: 400px; width: 100%; border-radius: 12px; margin-bottom: 30px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); cursor: pointer;"
+                 onclick="openImageModal('youtube-stats.jpg.png')">
+
+            <div style="display: flex; justify-content: center; gap: 40px; flex-wrap: wrap; margin-bottom: 30px;">
+                <div style="text-align: center;">
+                    <div style="font-family: 'Orbitron', sans-serif; font-size: 2.5rem; color: var(--accent-pink);">410K+</div>
+                    <div style="color: var(--text-dim); font-size: 0.85rem;" data-zh="YouTube 粉丝" data-en="YouTube Subs">YouTube 粉丝</div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="font-family: 'Orbitron', sans-serif; font-size: 2.5rem; color: var(--accent-cyan);">200M+</div>
+                    <div style="color: var(--text-dim); font-size: 0.85rem;" data-zh="总播放量" data-en="Total Views">总播放量</div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="font-family: 'Orbitron', sans-serif; font-size: 2.5rem; color: var(--accent-purple);">500+</div>
+                    <div style="color: var(--text-dim); font-size: 0.85rem;" data-zh="弹跳球代码" data-en="Bounce Codes">弹跳球代码</div>
+                </div>
+            </div>
+            <a href="https://www.youtube.com/@guizuxiaoqiu" target="_blank" style="display: inline-flex; align-items: center; gap: 10px; background: linear-gradient(135deg, #ff0000, #cc0000); color: white; padding: 12px 30px; border-radius: 30px; text-decoration: none; font-weight: 600; transition: all 0.3s; font-size: 0.9rem;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                <span data-zh="关注我的 YouTube 频道 →" data-en="Subscribe My YouTube →">关注我的 YouTube 频道 →</span>
+            </a>
+        </div>
+    </section>
+
+    <section class="stats">
+        <div class="stat-item">
+            <div class="stat-number">500+</div>
+            <div class="stat-label" data-zh="代码作品" data-en="Code Works">代码作品</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number">50+</div>
+            <div class="stat-label" data-zh="特效类型" data-en="Effect Types">特效类型</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number">100%</div>
+            <div class="stat-label" data-zh="可运行代码" data-en="Ready to Run">可运行代码</div>
+        </div>
+    </section>
+
+    <section class="products-section">
+        <h2 class="section-title" data-zh="精选代码" data-en="Featured Codes">精选代码</h2>
+        <div class="products-grid">
+            <!-- Product 1 -->
+            <div class="product-card">
+                <div class="product-preview">
+                    <div class="product-badge" data-zh="热销" data-en="HOT">热销</div>
+                    <canvas id="demo1"></canvas>
+                </div>
+                <div class="product-info">
+                    <h3 class="product-name" data-zh="彩虹边界弹跳球" data-en="Rainbow Border Bounce">彩虹边界弹跳球</h3>
+                    <p class="product-desc" data-zh="圆形边界 + 彩虹渐变边框 + 蓝色轨迹拖尾 + 碰撞音效，视觉效果震撼" data-en="Circular border + Rainbow gradient + Blue trail + Collision sound effects">圆形边界 + 彩虹渐变边框 + 蓝色轨迹拖尾 + 碰撞音效，视觉效果震撼</p>
+                    <div class="product-tags">
+                        <span class="tag" data-zh="圆形边界" data-en="Circular">圆形边界</span>
+                        <span class="tag" data-zh="渐变特效" data-en="Gradient">渐变特效</span>
+                        <span class="tag" data-zh="音效" data-en="Sound">音效</span>
+                    </div>
+                    <div class="product-footer">
+                        <div class="product-price">$29.99 <span>USDT</span></div>
+                        <button class="buy-btn" data-zh="购买" data-en="Buy" onclick="openModal('rainbow-ball', 29.99)">购买</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Product 2 -->
+            <div class="product-card">
+                <div class="product-preview">
+                    <video autoplay loop muted playsinline style="width: 100%; height: 100%; object-fit: cover;">
+                        <source src="demo2.mp4.mp4" type="video/mp4">
+                    </video>
+                </div>
+                <div class="product-info">
+                    <h3 class="product-name" data-zh="11色转圈弹跳球" data-en="11-Color Spin Bounce">11色转圈弹跳球</h3>
+                    <p class="product-desc" data-zh="11色彩虹渐变 + 自动转圈轨迹 + 小球持续变大 + 渐变轨迹绘制" data-en="11-color rainbow + Auto-spin trail + Growing ball + Gradient trail">11色彩虹渐变 + 自动转圈轨迹 + 小球持续变大 + 渐变轨迹绘制</p>
+                    <div class="product-tags">
+                        <span class="tag" data-zh="自动转圈" data-en="Auto-Spin">自动转圈</span>
+                        <span class="tag" data-zh="彩虹渐变" data-en="Rainbow">彩虹渐变</span>
+                        <span class="tag" data-zh="渐变轨迹" data-en="Gradient Trail">渐变轨迹</span>
+                    </div>
+                    <div class="product-footer">
+                        <div class="product-price">$39.99 <span>USDT</span></div>
+                        <button class="buy-btn" data-zh="购买" data-en="Buy" onclick="openModal('11color-spin', 39.99)">购买</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Product 3 -->
+            <div class="product-card">
+                <div class="product-preview">
+                    <div class="product-badge" data-zh="新品" data-en="NEW">新品</div>
+                    <video autoplay loop muted playsinline style="width: 100%; height: 100%; object-fit: cover;">
+                        <source src="demo3.mp4.mp4" type="video/mp4">
+                    </video>
+                </div>
+                <div class="product-info">
+                    <h3 class="product-name" data-zh="21色渐变弹跳球" data-en="21-Color Gradient Bounce">21色渐变弹跳球</h3>
+                    <p class="product-desc" data-zh="21色彩虹渐变 + 小球持续变大 + 渐变轨迹绘制 + 向上吸引力" data-en="21-color rainbow gradient + Growing ball + Gradient trail + Upward attraction">21色彩虹渐变 + 小球持续变大 + 渐变轨迹绘制 + 向上吸引力</p>
+                    <div class="product-tags">
+                        <span class="tag" data-zh="21色渐变" data-en="21 Colors">21色渐变</span>
+                        <span class="tag" data-zh="渐变轨迹" data-en="Gradient Trail">渐变轨迹</span>
+                        <span class="tag" data-zh="向上吸引力" data-en="Attraction">向上吸引力</span>
+                    </div>
+                    <div class="product-footer">
+                        <div class="product-price">$29.99 <span>USDT</span></div>
+                        <button class="buy-btn" data-zh="购买" data-en="Buy" onclick="openModal('21color-gradient', 29.99)">购买</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Product 4 -->
+            <div class="product-card">
+                <div class="product-preview">
+                    <video autoplay loop muted playsinline style="width: 100%; height: 100%; object-fit: cover;">
+                        <source src="demo4.mp4.mp4" type="video/mp4">
+                    </video>
+                </div>
+                <div class="product-info">
+                    <h3 class="product-name" data-zh="四球彩虹弹跳" data-en="4-Ball Rainbow Bounce">四球彩虹弹跳</h3>
+                    <p class="product-desc" data-zh="15色彩虹渐变 + 4个小球同时弹跳 + 持续变大 + 多轨迹绘制" data-en="15-color rainbow + 4 balls bouncing + Growing size + Multiple trails">15色彩虹渐变 + 4个小球同时弹跳 + 持续变大 + 多轨迹绘制</p>
+                    <div class="product-tags">
+                        <span class="tag" data-zh="四球同步" data-en="4 Balls">四球同步</span>
+                        <span class="tag" data-zh="彩虹渐变" data-en="Rainbow">彩虹渐变</span>
+                        <span class="tag" data-zh="多轨迹" data-en="Multi-Trail">多轨迹</span>
+                    </div>
+                    <div class="product-footer">
+                        <div class="product-price">$39.99 <span>USDT</span></div>
+                        <button class="buy-btn" data-zh="购买" data-en="Buy" onclick="openModal('4ball-rainbow', 39.99)">购买</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Product 5 -->
+            <div class="product-card">
+                <div class="product-preview">
+                    <video autoplay loop muted playsinline style="width: 100%; height: 100%; object-fit: cover;">
+                        <source src="demo5.mp4.mp4" type="video/mp4">
+                    </video>
+                </div>
+                <div class="product-info">
+                    <h3 class="product-name" data-zh="波浪扩散弹跳球" data-en="Wave Ripple Bounce">波浪扩散弹跳球</h3>
+                    <p class="product-desc" data-zh="14色彩虹渐变 + 碰撞波浪扩散 + 小球持续变大 + 自动转圈轨迹" data-en="14-color rainbow + Collision waves + Growing ball + Auto-spin trail">14色彩虹渐变 + 碰撞波浪扩散 + 小球持续变大 + 自动转圈轨迹</p>
+                    <div class="product-tags">
+                        <span class="tag" data-zh="波浪扩散" data-en="Wave Ripple">波浪扩散</span>
+                        <span class="tag" data-zh="彩虹渐变" data-en="Rainbow">彩虹渐变</span>
+                        <span class="tag" data-zh="自动转圈" data-en="Auto-Spin">自动转圈</span>
+                    </div>
+                    <div class="product-footer">
+                        <div class="product-price">$29.99 <span>USDT</span></div>
+                        <button class="buy-btn" data-zh="购买" data-en="Buy" onclick="openModal('wave-ripple', 29.99)">购买</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Product 6 -->
+            <div class="product-card">
+                <div class="product-preview">
+                    <div class="product-badge" data-zh="高级" data-en="PRO">高级</div>
+                    <video autoplay loop muted playsinline style="width: 100%; height: 100%; object-fit: cover;">
+                        <source src="demo6.mp4.mp4" type="video/mp4">
+                    </video>
+                </div>
+                <div class="product-info">
+                    <h3 class="product-name" data-zh="21色粒子渐变弹跳" data-en="21-Color Particle Gradient">21色粒子渐变弹跳</h3>
+                    <p class="product-desc" data-zh="21色鲜艳渐变 + 碰撞粒子爆发 + 渐变轨迹绘制 + 小球持续变大" data-en="21 vivid colors + Collision particles + Gradient trail + Growing ball">21色鲜艳渐变 + 碰撞粒子爆发 + 渐变轨迹绘制 + 小球持续变大</p>
+                    <div class="product-tags">
+                        <span class="tag" data-zh="粒子爆发" data-en="Particles">粒子爆发</span>
+                        <span class="tag" data-zh="21色渐变" data-en="21 Colors">21色渐变</span>
+                        <span class="tag" data-zh="渐变轨迹" data-en="Gradient Trail">渐变轨迹</span>
+                    </div>
+                    <div class="product-footer">
+                        <div class="product-price">$49.99 <span>USDT</span></div>
+                        <button class="buy-btn" data-zh="购买" data-en="Buy" onclick="openModal('21color-particle', 49.99)">购买</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="bundle-section">
+        <div class="bundle-card">
+            <h2 class="bundle-title" data-zh="🚀 全套代码打包" data-en="🚀 Complete Bundle">🚀 全套代码打包</h2>
+            <p class="bundle-desc" data-zh="包含 500+ 个弹跳球代码，涵盖所有特效类型<br>从基础到进阶，适合学习和商业项目" data-en="500+ bouncing ball codes, all effect types<br>From basic to advanced, for learning and commercial use">包含 500+ 个弹跳球代码，涵盖所有特效类型<br>从基础到进阶，适合学习和商业项目</p>
+            <div class="bundle-price">$888 USDT</div>
+            <div class="bundle-original" data-zh="单买价值 $2000+ USDT" data-en="Individual value $2000+ USDT">单买价值 $2000+ USDT</div>
+            <button class="bundle-buy-btn" data-zh="立即购买全套" data-en="Buy Complete Bundle" onclick="openModal('full-bundle', 888)">立即购买全套</button>
+        </div>
+    </section>
+
+    <section class="payment-section">
+        <h2 class="payment-title" data-zh="💳 支付方式" data-en="💳 Payment Method">💳 支付方式</h2>
+        <div class="payment-methods">
+            <div class="payment-method">
+                <div class="usdt-icon">$</div>
+                <span>USDT (TRC20)</span>
+            </div>
+            <div class="payment-method">
+                <div class="usdt-icon">$</div>
+                <span>USDT (ERC20)</span>
+            </div>
+        </div>
+    </section>
+
+    <section class="contact-section">
+        <h3 class="contact-title" data-zh="📧 联系方式" data-en="📧 Contact">📧 联系方式</h3>
+        <a href="mailto:pengpengyaofa@gmail.com" class="contact-email">pengpengyaofa@gmail.com</a>
+        <p style="margin-top: 15px; color: var(--text-dim); font-size: 0.9rem;" data-zh="付款后请发送交易哈希，确认后立即发送代码" data-en="Send TX hash after payment, code delivered within 24h">付款后请发送交易哈希，确认后立即发送代码</p>
+    </section>
+
+    <footer class="footer">
+        <p class="footer-text" data-zh="© 2026 弹跳球工坊<br>所有代码均已测试可直接运行" data-en="© 2026 BounceCode Workshop<br>All codes tested and ready to run">© 2026 弹跳球工坊<br>所有代码均已测试可直接运行</p>
+    </footer>
+
+    <!-- Payment Modal -->
+    <div class="modal-overlay" id="paymentModal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+            <h3 class="modal-title" data-zh="USDT 支付" data-en="USDT Payment">USDT 支付</h3>
+            <p style="color: var(--text-dim); margin-bottom: 10px;" data-zh="商品:" data-en="Product:">商品:</p>
+            <p style="font-size: 1.2rem; color: var(--text); margin-bottom: 5px;" id="modalProductName">-</p>
+            <p style="font-size: 1.6rem; color: var(--accent-cyan); margin-bottom: 15px; font-weight: bold;">$<span id="modalPrice">0</span> USDT</p>
+
+            <!-- Network Switch Buttons -->
+            <div style="margin: 15px 0;">
+                <button class="network-btn trc20 active" id="btnTrc20" onclick="switchNetwork('trc20')">TRC20</button>
+                <button class="network-btn erc20" id="btnErc20" onclick="switchNetwork('erc20')">ERC20</button>
+            </div>
+
+            <!-- QR Code Container -->
+            <div class="qr-container" id="qrContainer">
+                <img id="trc20Qr" class="qr-image" src="" alt="TRC20 QR" style="display: none;">
+                <img id="erc20Qr" class="qr-image" src="" alt="ERC20 QR" style="display: none;">
+            </div>
+
+            <!-- Wallet Address -->
+            <div class="wallet-address" id="trc20Address">TWWTcEYQDNdPwMupesjgeAajUAgq76CXKh</div>
+            <div class="wallet-address" id="erc20Address" style="display: none;">0x36dedc4d220eb67c5ba5a8f3aa5eda9d91c9aa13</div>
+
+            <button class="copy-btn" onclick="copyAddress()" data-zh="复制钱包地址" data-en="Copy Address">复制钱包地址</button>
+
+            <p style="margin-top: 15px; color: var(--text-dim); font-size: 0.75rem; line-height: 1.5;" data-zh="⚠️ 付款后请将交易哈希发送至邮箱确认<br>确认后 24 小时内发送代码文件" data-en="⚠️ Send TX hash to email after payment<br>Code delivered within 24h after confirmation">⚠️ 付款后请将交易哈希发送至邮箱确认<br>确认后 24 小时内发送代码文件</p>
+        </div>
+    </div>
+
+    <!-- Image Modal for enlarged view -->
+    <div class="modal-overlay" id="imageModal" onclick="closeImageModal()">
+        <div style="position: relative; max-width: 90%; max-height: 90%;" onclick="event.stopPropagation();">
+            <img id="modalImage" src="" alt="Enlarged view" style="max-width: 100%; max-height: 85vh; border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,0.8);">
+            <button onclick="closeImageModal()" style="position: absolute; top: -40px; right: 0; background: none; border: none; color: white; font-size: 2rem; cursor: pointer;">&times;</button>
+        </div>
+    </div>
+
+    <script>
+        // ==================== Matrix/Hacker Background ====================
+        const matrixCanvas = document.getElementById('matrix-canvas');
+        const ctx = matrixCanvas.getContext('2d');
+        
+        matrixCanvas.width = window.innerWidth;
+        matrixCanvas.height = window.innerHeight;
+        
+        const chars = '0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0101010101';
+        const fontSize = 14;
+        const columns = matrixCanvas.width / fontSize;
+        const drops = [];
+        
+        for (let i = 0; i < columns; i++) {
+            drops[i] = Math.random() * -100;
+        }
+        
+        function drawMatrix() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+            ctx.fillRect(0, 0, matrixCanvas.width, matrixCanvas.height);
+            
+            ctx.fillStyle = '#00ff00';
+            ctx.font = fontSize + 'px JetBrains Mono';
+            
+            for (let i = 0; i < drops.length; i++) {
+                const char = chars[Math.floor(Math.random() * chars.length)];
+                const x = i * fontSize;
+                const y = drops[i] * fontSize;
+                
+                // Gradient green effect
+                const brightness = Math.random();
+                if (brightness > 0.9) {
+                    ctx.fillStyle = '#ffffff';
+                } else if (brightness > 0.7) {
+                    ctx.fillStyle = '#00ff88';
+                } else {
+                    ctx.fillStyle = '#00aa00';
+                }
+                
+                ctx.fillText(char, x, y);
+                
+                if (y > matrixCanvas.height && Math.random() > 0.975) {
+                    drops[i] = 0;
+                }
+                drops[i]++;
+            }
+        }
+        
+        setInterval(drawMatrix, 50);
+        
+        // Resize handler
+        window.addEventListener('resize', () => {
+            matrixCanvas.width = window.innerWidth;
+            matrixCanvas.height = window.innerHeight;
+        });
+
+        // ==================== Custom Cursor ====================
+        const cursor = document.getElementById('cursor');
+        const cursorDot = document.getElementById('cursorDot');
+        const cursorTrail = document.getElementById('cursorTrail');
+        let mouseX = 0, mouseY = 0;
+        let trailX = 0, trailY = 0;
+        
+        document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+            cursorDot.style.left = mouseX - 3 + 'px';
+            cursorDot.style.top = mouseY - 3 + 'px';
+        });
+        
+        function updateCursor() {
+            // Main cursor follows with slight delay
+            cursor.style.left = mouseX - 10 + 'px';
+            cursor.style.top = mouseY - 10 + 'px';
+            
+            // Trail follows with more delay for trail effect
+            trailX += (mouseX - trailX) * 0.2;
+            trailY += (mouseY - trailY) * 0.2;
+            cursorTrail.style.left = trailX - 15 + 'px';
+            cursorTrail.style.top = trailY - 15 + 'px';
+            
+            requestAnimationFrame(updateCursor);
+        }
+        
+        // Color cycle for cursor
+        let hue = 0;
+        function cycleCursorColor() {
+            hue = (hue + 2) % 360;
+            cursor.style.borderColor = `hsl(${hue}, 100%, 50%)`;
+            cursorTrail.style.background = `radial-gradient(circle, hsla(${hue}, 100%, 50%, 0.3) 0%, transparent 70%)`;
+            requestAnimationFrame(cycleCursorColor);
+        }
+        
+        updateCursor();
+        cycleCursorColor();
+        
+        // Hide default cursor on desktop
+        if (window.matchMedia('(pointer: fine)').matches) {
+            document.body.style.cursor = 'none';
+        }
+
+        // ==================== Language Toggle ====================
+        let currentLang = 'en';
+
+        function toggleLanguage() {
+            currentLang = currentLang === 'zh' ? 'en' : 'zh';
+            document.getElementById('langSwitch').textContent = currentLang === 'zh' ? 'EN' : '中文';
+
+            document.querySelectorAll('[data-zh][data-en]').forEach(el => {
+                el.textContent = el.getAttribute(`data-${currentLang}`);
+                if (el.innerHTML.includes('<br>')) {
+                    el.innerHTML = el.getAttribute(`data-${currentLang}`);
+                }
+            });
+        }
+
+        // Initialize with English
+        window.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('[data-zh][data-en]').forEach(el => {
+                el.textContent = el.getAttribute('data-en');
+                if (el.innerHTML.includes('<br>')) {
+                    el.innerHTML = el.getAttribute('data-en');
+                }
+            });
+        });
+
+        // ==================== Payment Modal ====================
+        let currentNetwork = 'trc20';
+        let currentProductName = '';
+        let currentPrice = 0;
+
+        function openModal(productName, price) {
+            currentProductName = productName;
+            currentPrice = price;
+            document.getElementById('modalProductName').textContent = productName;
+            document.getElementById('modalPrice').textContent = price.toFixed(2);
+            document.getElementById('paymentModal').classList.add('active');
+            switchNetwork(currentNetwork);
+        }
+
+        function closeModal() {
+            document.getElementById('paymentModal').classList.remove('active');
+        }
+
+        function switchNetwork(network) {
+            currentNetwork = network;
+            const trc20Qr = document.getElementById('trc20Qr');
+            const erc20Qr = document.getElementById('erc20Qr');
+            const trc20Address = document.getElementById('trc20Address');
+            const erc20Address = document.getElementById('erc20Address');
+            const btnTrc20 = document.getElementById('btnTrc20');
+            const btnErc20 = document.getElementById('btnErc20');
+
+            if (network === 'trc20') {
+                trc20Qr.style.display = 'block';
+                erc20Qr.style.display = 'none';
+                trc20Address.style.display = 'block';
+                erc20Address.style.display = 'none';
+                btnTrc20.classList.add('active');
+                btnErc20.classList.remove('active');
+            } else {
+                trc20Qr.style.display = 'none';
+                erc20Qr.style.display = 'block';
+                trc20Address.style.display = 'none';
+                erc20Address.style.display = 'block';
+                btnTrc20.classList.remove('active');
+                btnErc20.classList.add('active');
+            }
+        }
+
+        function copyAddress() {
+            const address = currentNetwork === 'trc20'
+                ? 'TWWTcEYQDNdPwMupesjgeAajUAgq76CXKh'
+                : '0x36dedc4d220eb67c5ba5a8f3aa5eda9d91c9aa13';
+            navigator.clipboard.writeText(address).then(() => {
+                const btn = document.querySelector('.copy-btn');
+                const originalText = btn.textContent;
+                btn.textContent = currentLang === 'zh' ? '已复制!' : 'Copied!';
+                btn.style.background = '#26a17b';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.style.background = '';
+                }, 1500);
+            });
+        }
+
+        // Load QR codes
+        window.addEventListener('load', function() {
+            const trc20Img = document.getElementById('trc20Qr');
+            const erc20Img = document.getElementById('erc20Qr');
+
+            trc20Img.onerror = function() {
+                trc20Img.style.display = 'none';
+            };
+            trc20Img.src = 'trc20-qr.jpg.png';
+            trc20Img.onerror = function() {
+                trc20Img.src = 'trc20-qr.png';
+                trc20Img.onerror = function() {
+                    trc20Img.style.display = 'none';
+                };
+            };
+
+            erc20Img.onerror = function() {
+                erc20Img.src = 'erc20-qr.png';
+                erc20Img.onerror = function() {
+                    erc20Img.style.display = 'none';
+                };
+            };
+            erc20Img.src = 'erc20-qr.jpg.png';
+        });
+
+        // Close modal on overlay click
+        document.getElementById('paymentModal').addEventListener('click', function(e) {
+            if (e.target === this) closeModal();
+        });
+
+        // Image modal functions
+        function openImageModal(imageSrc) {
+            document.getElementById('modalImage').src = imageSrc;
+            document.getElementById('imageModal').classList.add('active');
+        }
+
+        function closeImageModal() {
+            document.getElementById('imageModal').classList.remove('active');
+        }
+
+        // Close modal on Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeModal();
+                closeImageModal();
+            }
+        });
+
+        // ==================== Canvas Animations ====================
+        function lerpColor(color1, color2, t) {
+            const c1 = hexToRgb(color1);
+            const c2 = hexToRgb(color2);
+            const r = Math.round(c1.r + (c2.r - c1.r) * t);
+            const g = Math.round(c1.g + (c2.g - c1.g) * t);
+            const b = Math.round(c1.b + (c2.b - c1.b) * t);
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : {r: 0, g: 0, b: 0};
+        }
+
+        // Demo 1: 彩虹边界弹跳球
+        function initDemo1(canvas) {
+            const ctx = canvas.getContext('2d');
+            canvas.width = 400;
+            canvas.height = 240;
+
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = 100;
+            const ballRadius = 6;
+
+            let ballX = centerX;
+            let ballY = centerY - 40;
+            let vx = 2;
+            let vy = 0;
+            const gravity = 0.15;
+            const trail = [];
+            const trailLength = 40;
+
+            const targetColors = ['#ff00ff', '#ff0000', '#ff6400'];
+            let colorIndex = 0;
+            let lastColorChange = 0;
+            let borderThickness = 10;
+
+            function animate() {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                ballX += vx;
+                ballY += vy;
+                vy += gravity;
+
+                const dx = ballX - centerX;
+                const dy = ballY - centerY;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist + ballRadius >= radius - borderThickness) {
+                    const nx = dx / dist;
+                    const ny = dy / dist;
+                    const dot = vx * nx + vy * ny;
+                    vx = vx - 2 * dot * nx;
+                    vy = vy - 2 * dot * ny;
+                    ballX = centerX + (radius - borderThickness - ballRadius - 1) * nx;
+                    ballY = centerY + (radius - borderThickness - ballRadius - 1) * ny;
+
+                    const now = Date.now();
+                    if (now - lastColorChange > 500) {
+                        colorIndex = (colorIndex + 1) % targetColors.length;
+                        lastColorChange = now;
+                    }
+                }
+
+                for (let i = 0; i < borderThickness; i++) {
+                    const t = i / borderThickness;
+                    let color;
+                    if (t < 0.5) {
+                        color = lerpColor('#000000', targetColors[1], t * 2);
+                    } else {
+                        color = lerpColor(targetColors[1], targetColors[2], (t - 0.5) * 2);
+                    }
+                    ctx.beginPath();
+                    ctx.arc(centerX, centerY, radius - i, 0, Math.PI * 2);
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                }
+
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius - borderThickness - 5, 0, Math.PI * 2);
+                ctx.fillStyle = '#000';
+                ctx.fill();
+
+                trail.push({x: ballX, y: ballY});
+                if (trail.length > trailLength) trail.shift();
+
+                for (let i = 0; i < trail.length; i++) {
+                    const alpha = i / trail.length;
+                    ctx.beginPath();
+                    ctx.arc(trail[i].x, trail[i].y, ballRadius * alpha, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(0, 0, 255, ${alpha * 0.7})`;
+                    ctx.fill();
+                }
+
+                ctx.beginPath();
+                ctx.arc(ballX, ballY, ballRadius, 0, Math.PI * 2);
+                ctx.fillStyle = '#0066ff';
+                ctx.fill();
+
+                borderThickness = 10 + Math.abs(Math.sin(Date.now() / 1000)) * 5;
+
+                requestAnimationFrame(animate);
+            }
+            animate();
+        }
+
+        // Demo 2: 螺旋迷宫弹跳球（简化版）
+        function initDemo2(canvas) {
+            const ctx = canvas.getContext('2d');
+            canvas.width = 400;
+            canvas.height = 240;
+
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+
+            let ballX = centerX + 80;
+            let ballY = centerY - 60;
+            let vx = -1.5;
+            let vy = 0.8;
+            const ballRadius = 5;
+            const gravity = 0.08;
+
+            let time = 0;
+            const triangles = [];
+            const fragments = [];
+
+            // 创建三角形障碍物 - 螺旋排列
+            for (let i = 0; i < 12; i++) {
+                const angle = (i / 12) * Math.PI * 2 + (i * 0.3);
+                const r = 35 + i * 6;
+                triangles.push({
+                    x: centerX + Math.cos(angle) * r,
+                    y: centerY + Math.sin(angle) * r,
+                    angle: angle + Math.PI / 2,
+                    size: 10 + (i % 3) * 3,
+                    hue: (i * 30) % 360,
+                    alive: true
+                });
+            }
+
+            // 创建螺旋通道点
+            const spiralPoints = [];
+            for (let i = 0; i < 100; i++) {
+                const angle = (i / 100) * Math.PI * 4;
+                const r = 50 + i * 1.5;
+                spiralPoints.push({
+                    x: centerX + Math.cos(angle) * r,
+                    y: centerY + Math.sin(angle) * r,
+                    hue: (i * 3.6) % 360
+                });
+            }
+
+            function drawTriangle(x, y, size, angle, color, alpha = 1) {
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.rotate(angle);
+                ctx.beginPath();
+                ctx.moveTo(0, -size);
+                ctx.lineTo(-size * 0.866, size * 0.5);
+                ctx.lineTo(size * 0.866, size * 0.5);
+                ctx.closePath();
+                ctx.fillStyle = color;
+                ctx.globalAlpha = alpha;
+                ctx.fill();
+                ctx.restore();
+                ctx.globalAlpha = 1;
+            }
+
+            function animate() {
+                ctx.fillStyle = 'rgba(5, 0, 15, 0.25)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                time += 0.015;
+
+                // 物理更新
+                ballX += vx;
+                ballY += vy;
+                vy += gravity;
+
+                // 边界反弹
+                if (ballX < ballRadius + 10 || ballX > canvas.width - ballRadius - 10) {
+                    vx *= -0.9;
+                    ballX = Math.max(ballRadius + 10, Math.min(canvas.width - ballRadius - 10, ballX));
+                }
+                if (ballY < ballRadius + 10 || ballY > canvas.height - ballRadius - 10) {
+                    vy *= -0.9;
+                    ballY = Math.max(ballRadius + 10, Math.min(canvas.height - ballRadius - 10, ballY));
+                }
+
+                // 三角形碰撞检测
+                for (const tri of triangles) {
+                    if (!tri.alive) continue;
+                    const dx = ballX - tri.x;
+                    const dy = ballY - tri.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < ballRadius + tri.size * 0.6) {
+                        tri.alive = false;
+                        const nx = dx / dist;
+                        const ny = dy / dist;
+                        vx = nx * 2.5;
+                        vy = ny * 2.5 - 1;
+
+                        // 创建碎片
+                        for (let i = 0; i < 6; i++) {
+                            fragments.push({
+                                x: tri.x,
+                                y: tri.y,
+                                vx: (Math.random() - 0.5) * 6,
+                                vy: (Math.random() - 0.5) * 6 - 2,
+                                angle: Math.random() * Math.PI * 2,
+                                spin: (Math.random() - 0.5) * 0.3,
+                                size: 5 + Math.random() * 6,
+                                hue: tri.hue,
+                                life: 50
+                            });
+                        }
+                    }
+                }
+
+                // 更新碎片
+                for (let i = fragments.length - 1; i >= 0; i--) {
+                    const f = fragments[i];
+                    f.x += f.vx;
+                    f.y += f.vy;
+                    f.vy += 0.2;
+                    f.angle += f.spin;
+                    f.life--;
+
+                    if (f.life > 0) {
+                        drawTriangle(f.x, f.y, f.size, f.angle, `hsl(${f.hue}, 80%, 60%)`, f.life / 50);
+                    } else {
+                        fragments.splice(i, 1);
+                    }
+                }
+
+                // 绘制螺旋通道（简化版）
+                ctx.beginPath();
+                for (let i = 0; i < spiralPoints.length - 1; i++) {
+                    const p1 = spiralPoints[i];
+                    const p2 = spiralPoints[i + 1];
+                    ctx.moveTo(p1.x, p1.y);
+                    ctx.lineTo(p2.x, p2.y);
+                }
+                ctx.strokeStyle = `hsla(${(time * 50) % 360}, 80%, 50%, 0.3)`;
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                // 绘制三角形
+                for (const tri of triangles) {
+                    if (tri.alive) {
+                        drawTriangle(tri.x, tri.y, tri.size, tri.angle, `hsl(${tri.hue}, 80%, 60%)`);
+                    }
+                }
+
+                // 重生所有三角形
+                if (triangles.every(t => !t.alive)) {
+                    for (const tri of triangles) {
+                        tri.alive = true;
+                    }
+                }
+
+                // 绘制彩虹球
+                const hue = (time * 60) % 360;
+                ctx.beginPath();
+                ctx.arc(ballX, ballY, ballRadius, 0, Math.PI * 2);
+                ctx.fillStyle = `hsl(${hue}, 90%, 60%)`;
+                ctx.fill();
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+
+                // 高光
+                ctx.beginPath();
+                ctx.arc(ballX - ballRadius * 0.3, ballY - ballRadius * 0.3, ballRadius * 0.3, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255,255,255,0.6)';
+                ctx.fill();
+
+                requestAnimationFrame(animate);
+            }
+
+            animate();
+        }
+
+        // Demo 3: 20色渐变弹跳球
+        function initDemo3(canvas) {
+            const ctx = canvas.getContext('2d');
+            canvas.width = 400;
+            canvas.height = 240;
+
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            let radius = 100;
+            const ballRadius = 8;
+
+            let ballX = centerX;
+            let ballY = centerY - 30;
+            let vx = 2;
+            let vy = 1;
+
+            const colors = [
+                '#ff8000', '#00ffff', '#ff00ff', '#800080', '#00ff00',
+                '#ff4500', '#000080', '#ffd700', '#ffc0cb', '#8b008b',
+                '#008080', '#ffa500', '#ff1493', '#008000', '#ff0000',
+                '#ffffff', '#808080', '#daa520', '#0000ff', '#008000'
+            ];
+            let colorIndex = 0;
+            let nextColorIndex = 1;
+            let colorProgress = 0;
+
+            const trail = [];
+
+            function animate() {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                ballX += vx;
+                ballY += vy;
+
+                colorProgress += 0.02;
+                if (colorProgress >= 1) {
+                    colorProgress = 0;
+                    colorIndex = nextColorIndex;
+                    nextColorIndex = (nextColorIndex + 1) % colors.length;
+                }
+
+                const currentColor = lerpColor(colors[colorIndex], colors[nextColorIndex], colorProgress);
+
+                const dx = ballX - centerX;
+                const dy = ballY - centerY;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist + ballRadius >= radius) {
+                    radius += 1;
+                    const nx = dx / dist;
+                    const ny = dy / dist;
+                    const dot = vx * nx + vy * ny;
+                    vx = vx - 2 * dot * nx;
+                    vy = vy - 2 * dot * ny;
+                    ballX = centerX + (radius - ballRadius - 1) * nx;
+                    ballY = centerY + (radius - ballRadius - 1) * ny;
+                }
+
+                trail.push({x: ballX, y: ballY, color: currentColor});
+                if (trail.length > 30) trail.shift();
+
+                for (let i = 0; i < trail.length; i++) {
+                    ctx.beginPath();
+                    ctx.arc(trail[i].x, trail[i].y, ballRadius * 0.8, 0, Math.PI * 2);
+                    ctx.fillStyle = trail[i].color;
+                    ctx.globalAlpha = i / trail.length * 0.5;
+                    ctx.fill();
+                    ctx.globalAlpha = 1;
+                }
+
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+                ctx.strokeStyle = currentColor;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.arc(ballX, ballY, ballRadius, 0, Math.PI * 2);
+                ctx.fillStyle = currentColor;
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(ballX, ballY, ballRadius + 1, 0, Math.PI * 2);
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+
+                if (radius > 110) radius = 100;
+
+                requestAnimationFrame(animate);
+            }
+            animate();
+        }
+
+        // Demo 4: 粒子爆炸弹跳球
+        function initDemo4(canvas) {
+            const ctx = canvas.getContext('2d');
+            canvas.width = 400;
+            canvas.height = 240;
+
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = 100;
+            let ballRadius = 4;
+
+            let ballX = centerX;
+            let ballY = centerY;
+            let vx = 0.00001;
+            let vy = -1;
+            const gravity = 0.008;
+
+            const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff'];
+            let colorIndex = 0;
+
+            const particles = [];
+
+            function animate() {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                ballX += vx;
+                ballY += vy;
+                vy += gravity;
+
+                const dx = ballX - centerX;
+                const dy = ballY - centerY;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist + ballRadius >= radius) {
+                    ballRadius += 0.5;
+                    const nx = dx / dist;
+                    const ny = dy / dist;
+                    const dot = vx * nx + vy * ny;
+                    vx = vx - 2 * dot * nx;
+                    vy = vy - 2 * dot * ny;
+                    ballX = centerX + (radius - ballRadius - 1) * nx;
+                    ballY = centerY + (radius - ballRadius - 1) * ny;
+
+                    for (let i = 0; i < 30; i++) {
+                        particles.push({
+                            x: ballX,
+                            y: ballY,
+                            vx: (Math.random() - 0.5) * 6,
+                            vy: (Math.random() - 0.5) * 6,
+                            life: 80,
+                            color: colors[Math.floor(Math.random() * colors.length)]
+                        });
+                    }
+
+                    colorIndex = (colorIndex + 1) % colors.length;
+                }
+
+                for (let i = particles.length - 1; i >= 0; i--) {
+                    const p = particles[i];
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.vy += gravity;
+                    p.life--;
+
+                    if (p.life > 0) {
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+                        ctx.fillStyle = p.color;
+                        ctx.globalAlpha = p.life / 80;
+                        ctx.fill();
+                        ctx.globalAlpha = 1;
+                    } else {
+                        particles.splice(i, 1);
+                    }
+                }
+
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+                ctx.strokeStyle = colors[colorIndex];
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.arc(ballX, ballY, ballRadius, 0, Math.PI * 2);
+                ctx.fillStyle = '#ffffff';
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(ballX, ballY, ballRadius, 0, Math.PI * 2);
+                ctx.strokeStyle = colors[colorIndex];
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                if (ballRadius > 20) ballRadius = 4;
+
+                requestAnimationFrame(animate);
+            }
+            animate();
+        }
+
+        // Demo 5: 红紫渐变弹跳球
+        function initDemo5(canvas) {
+            const ctx = canvas.getContext('2d');
+            canvas.width = 400;
+            canvas.height = 240;
+
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = 100;
+            let borderThickness = 10;
+
+            let ballX = centerX + 50;
+            let ballY = centerY - 40;
+            let vx = 0.00001;
+            let vy = 0;
+            const ballRadius = 8;
+            const gravity = 0.12;
+
+            const targetColors = ['#ff00ff', '#000000', '#ff0000'];
+            let colorIndex = 0;
+            let lastColorChange = 0;
+
+            const trail = [];
+            const trailLength = 50;
+
+            function animate() {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                ballX += vx * 1.1;
+                ballY += vy * 1.1;
+                vy += gravity;
+
+                const dx = ballX - centerX;
+                const dy = ballY - centerY;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist + ballRadius >= radius - borderThickness) {
+                    const nx = dx / dist;
+                    const ny = dy / dist;
+                    const dot = vx * nx + vy * ny;
+                    vx = vx - 2 * dot * nx;
+                    vy = vy - 2 * dot * ny;
+                    ballX = centerX + (radius - borderThickness - ballRadius - 1) * nx;
+                    ballY = centerY + (radius - borderThickness - ballRadius - 1) * ny;
+
+                    const now = Date.now();
+                    if (now - lastColorChange > 500) {
+                        colorIndex = (colorIndex + 1) % targetColors.length;
+                        lastColorChange = now;
+                    }
+                }
+
+                for (let i = 0; i < borderThickness; i++) {
+                    const t = i / borderThickness;
+                    let color;
+                    if (t < 0.5) {
+                        color = lerpColor('#ff0000', targetColors[1], t * 2);
+                    } else {
+                        color = lerpColor(targetColors[1], targetColors[2], (t - 0.5) * 2);
+                    }
+                    ctx.beginPath();
+                    ctx.arc(centerX, centerY, radius - i, 0, Math.PI * 2);
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                }
+
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius - borderThickness - 3, 0, Math.PI * 2);
+                ctx.fillStyle = '#000';
+                ctx.fill();
+
+                trail.push({x: ballX, y: ballY});
+                if (trail.length > trailLength) trail.shift();
+
+                for (let i = 0; i < trail.length; i++) {
+                    const alpha = i / trail.length;
+                    const color = lerpColor('#ffffff', targetColors[colorIndex], i / trailLength);
+                    ctx.beginPath();
+                    ctx.arc(trail[i].x, trail[i].y, ballRadius * alpha * 0.8, 0, Math.PI * 2);
+                    ctx.fillStyle = color;
+                    ctx.globalAlpha = alpha * 0.5;
+                    ctx.fill();
+                    ctx.globalAlpha = 1;
+                }
+
+                ctx.beginPath();
+                ctx.arc(ballX, ballY, ballRadius, 0, Math.PI * 2);
+                ctx.fillStyle = '#ffffff';
+                ctx.fill();
+
+                borderThickness = 10 + Math.abs(Math.sin(Date.now() / 500)) * 5;
+
+                requestAnimationFrame(animate);
+            }
+            animate();
+        }
+
+        // Demo 6: 螺旋迷宫弹跳球
+        function initDemo6(canvas) {
+            const ctx = canvas.getContext('2d');
+            canvas.width = 400;
+            canvas.height = 240;
+
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+
+            let ballX = centerX + 80;
+            let ballY = centerY - 60;
+            let vx = -1;
+            let vy = 0.5;
+            const ballRadius = 6;
+            const gravity = 0.1;
+
+            let time = 0;
+            const triangles = [];
+            const fragments = [];
+
+            for (let i = 0; i < 8; i++) {
+                const angle = (i / 8) * Math.PI * 2;
+                const r = 60 + i * 5;
+                triangles.push({
+                    x: centerX + Math.cos(angle) * r,
+                    y: centerY + Math.sin(angle) * r,
+                    angle: angle + Math.PI / 2,
+                    size: 15,
+                    hue: i * 45,
+                    alive: true
+                });
+            }
+
+            function animate() {
+                ctx.fillStyle = 'rgba(5, 0, 15, 0.3)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                time += 0.02;
+
+                ballX += vx;
+                ballY += vy;
+                vy += gravity;
+
+                if (ballX < ballRadius || ballX > canvas.width - ballRadius) {
+                    vx *= -0.95;
+                    ballX = Math.max(ballRadius, Math.min(canvas.width - ballRadius, ballX));
+                }
+                if (ballY < ballRadius || ballY > canvas.height - ballRadius) {
+                    vy *= -0.95;
+                    ballY = Math.max(ballRadius, Math.min(canvas.height - ballRadius, ballY));
+                }
+
+                for (const tri of triangles) {
+                    if (!tri.alive) continue;
+                    const dx = ballX - tri.x;
+                    const dy = ballY - tri.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < ballRadius + tri.size * 0.7) {
+                        tri.alive = false;
+                        const nx = dx / dist;
+                        const ny = dy / dist;
+                        vx = nx * 3;
+                        vy = ny * 3;
+
+                        for (let i = 0; i < 5; i++) {
+                            fragments.push({
+                                x: tri.x,
+                                y: tri.y,
+                                vx: (Math.random() - 0.5) * 8,
+                                vy: (Math.random() - 0.5) * 8 - 2,
+                                angle: Math.random() * Math.PI * 2,
+                                spin: (Math.random() - 0.5) * 0.3,
+                                size: 8 + Math.random() * 8,
+                                hue: tri.hue,
+                                life: 60
+                            });
+                        }
+                    }
+                }
+
+                for (let i = fragments.length - 1; i >= 0; i--) {
+                    const f = fragments[i];
+                    f.x += f.vx;
+                    f.y += f.vy;
+                    f.vy += 0.3;
+                    f.angle += f.spin;
+                    f.life--;
+
+                    if (f.life > 0) {
+                        drawTriangle(ctx, f.x, f.y, f.size, f.angle, `hsl(${f.hue}, 80%, 60%)`);
+                        ctx.globalAlpha = f.life / 60;
+                    } else {
+                        fragments.splice(i, 1);
+                    }
+                    ctx.globalAlpha = 1;
+                }
+
+                for (const tri of triangles) {
+                    if (tri.alive) {
+                        drawTriangle(ctx, tri.x, tri.y, tri.size, tri.angle, `hsl(${tri.hue}, 80%, 60%)`);
+                    }
+                }
+
+                if (triangles.every(t => !t.alive)) {
+                    for (const tri of triangles) {
+                        tri.alive = true;
+                    }
+                }
+
+                const hue = (time * 50) % 360;
+                ctx.beginPath();
+                ctx.arc(ballX, ballY, ballRadius, 0, Math.PI * 2);
+                ctx.fillStyle = `hsl(${hue}, 80%, 60%)`;
+                ctx.fill();
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                requestAnimationFrame(animate);
+            }
+
+            function drawTriangle(ctx, x, y, size, angle, color) {
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.rotate(angle);
+                ctx.beginPath();
+                ctx.moveTo(0, -size);
+                ctx.lineTo(-size * 0.866, size * 0.5);
+                ctx.lineTo(size * 0.866, size * 0.5);
+                ctx.closePath();
+                ctx.fillStyle = color;
+                ctx.fill();
+                ctx.restore();
+            }
+
+            animate();
+        }
+
+        // Main Demo
+        function initMainDemo(canvas) {
+            const ctx = canvas.getContext('2d');
+            canvas.width = 320;
+            canvas.height = 320;
+
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = 140;
+            const ballRadius = 8;
+
+            let ballX = centerX;
+            let ballY = centerY - 50;
+            let vx = 2;
+            let vy = 0;
+            const gravity = 0.15;
+            const trail = [];
+            const trailLength = 20;
+
+            const colors = ['#ff0093', '#0066ff', '#00f5ff', '#8800ff'];
+            let colorIndex = 0;
+
+            function animate() {
+                ctx.fillStyle = 'rgba(10, 10, 10, 0.3)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                ballX += vx;
+                ballY += vy;
+                vy += gravity;
+
+                const dx = ballX - centerX;
+                const dy = ballY - centerY;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist + ballRadius >= radius) {
+                    const nx = dx / dist;
+                    const ny = dy / dist;
+                    const dot = vx * nx + vy * ny;
+                    vx = vx - 2 * dot * nx;
+                    vy = vy - 2 * dot * ny;
+                    ballX = centerX + (radius - ballRadius - 1) * nx;
+                    ballY = centerY + (radius - ballRadius - 1) * ny;
+                    colorIndex = (colorIndex + 1) % colors.length;
+                }
+
+                trail.push({x: ballX, y: ballY});
+                if (trail.length > trailLength) trail.shift();
+
+                for (let i = 0; i < trail.length; i++) {
+                    const alpha = i / trail.length;
+                    ctx.beginPath();
+                    ctx.arc(trail[i].x, trail[i].y, ballRadius * alpha, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.5})`;
+                    ctx.fill();
+                }
+
+                ctx.beginPath();
+                ctx.arc(ballX, ballY, ballRadius, 0, Math.PI * 2);
+                ctx.fillStyle = '#ffffff';
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+                ctx.strokeStyle = colors[colorIndex];
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                requestAnimationFrame(animate);
+            }
+
+            animate();
+        }
+
+        // Initialize all demos
+        window.onload = function() {
+            initMainDemo(document.getElementById('mainDemo'));
+            initDemo1(document.getElementById('demo1'));
+            initDemo2(document.getElementById('demo2'));
+            initDemo3(document.getElementById('demo3'));
+            initDemo4(document.getElementById('demo4'));
+            initDemo5(document.getElementById('demo5'));
+            initDemo6(document.getElementById('demo6'));
+        };
+    </script>
+</body>
+</html>
