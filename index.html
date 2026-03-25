@@ -31,7 +31,7 @@
             min-height: 100vh;
             overflow-x: hidden;
         }
-        
+
         /* Hacker Background */
         #hacker-bg {
             position: fixed;
@@ -41,12 +41,12 @@
             height: 100%;
             z-index: -1;
             opacity: 0.15;
-            background: 
+            background:
                 linear-gradient(rgba(0, 255, 0, 0.03) 1px, transparent 1px),
                 linear-gradient(90deg, rgba(0, 255, 0, 0.03) 1px, transparent 1px);
             background-size: 50px 50px;
         }
-        
+
         #matrix-canvas {
             position: fixed;
             top: 0;
@@ -74,7 +74,7 @@
             transition: transform 0.1s ease;
             mix-blend-mode: difference;
         }
-        
+
         .cursor-dot {
             width: 6px;
             height: 6px;
@@ -84,7 +84,7 @@
             pointer-events: none;
             z-index: 9999;
         }
-        
+
         .cursor-trail {
             width: 30px;
             height: 30px;
@@ -715,12 +715,12 @@
     <!-- Hacker/Matrix Background -->
     <canvas id="matrix-canvas"></canvas>
     <div id="hacker-bg"></div>
-    
+
     <!-- Custom Cursor Elements -->
     <div class="cursor" id="cursor"></div>
     <div class="cursor-dot" id="cursorDot"></div>
     <div class="cursor-trail" id="cursorTrail"></div>
-    
+
     <header class="header">
         <button class="lang-switch" id="langSwitch" onclick="toggleLanguage()">中文</button>
         <h1 class="logo" data-zh="弹跳球工坊" data-en="BounceCode Workshop">弹跳球工坊</h1>
@@ -738,7 +738,7 @@
     <section style="background: linear-gradient(180deg, transparent, rgba(255,0,147,0.05), transparent); padding: 40px 20px; margin-bottom: 20px;">
         <div style="max-width: 800px; margin: 0 auto; text-align: center;">
             <!-- YouTube Stats Image -->
-            <img src="youtube-stats.jpg.png" alt="YouTube Channel Stats" 
+            <img src="youtube-stats.jpg.png" alt="YouTube Channel Stats"
                  style="max-width: 400px; width: 100%; border-radius: 12px; margin-bottom: 30px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); cursor: pointer;"
                  onclick="openImageModal('youtube-stats.jpg.png')">
 
@@ -805,7 +805,7 @@
             <!-- Product 2 -->
             <div class="product-card">
                 <div class="product-preview">
-                    <video autoplay loop muted playsinline style="width: 100%; height: 100%; object-fit: cover;">
+                    <video playsinline autoplay loop muted poster="" style="width: 100%; height: 100%; object-fit: cover; background: #000;">
                         <source src="demo2.mp4.mp4" type="video/mp4">
                     </video>
                 </div>
@@ -828,7 +828,7 @@
             <div class="product-card">
                 <div class="product-preview">
                     <div class="product-badge" data-zh="新品" data-en="NEW">新品</div>
-                    <video autoplay loop muted playsinline style="width: 100%; height: 100%; object-fit: cover;">
+                    <video playsinline autoplay loop muted poster="" style="width: 100%; height: 100%; object-fit: cover; background: #000;">
                         <source src="demo3.mp4.mp4" type="video/mp4">
                     </video>
                 </div>
@@ -850,7 +850,7 @@
             <!-- Product 4 -->
             <div class="product-card">
                 <div class="product-preview">
-                    <video autoplay loop muted playsinline style="width: 100%; height: 100%; object-fit: cover;">
+                    <video playsinline autoplay loop muted poster="" style="width: 100%; height: 100%; object-fit: cover; background: #000;">
                         <source src="demo4.mp4.mp4" type="video/mp4">
                     </video>
                 </div>
@@ -872,7 +872,7 @@
             <!-- Product 5 -->
             <div class="product-card">
                 <div class="product-preview">
-                    <video autoplay loop muted playsinline style="width: 100%; height: 100%; object-fit: cover;">
+                    <video playsinline autoplay loop muted poster="" style="width: 100%; height: 100%; object-fit: cover; background: #000;">
                         <source src="demo5.mp4.mp4" type="video/mp4">
                     </video>
                 </div>
@@ -895,7 +895,7 @@
             <div class="product-card">
                 <div class="product-preview">
                     <div class="product-badge" data-zh="高级" data-en="PRO">高级</div>
-                    <video autoplay loop muted playsinline style="width: 100%; height: 100%; object-fit: cover;">
+                    <video playsinline autoplay loop muted poster="" style="width: 100%; height: 100%; object-fit: cover; background: #000;">
                         <source src="demo6.mp4.mp4" type="video/mp4">
                     </video>
                 </div>
@@ -993,31 +993,31 @@
         // ==================== Matrix/Hacker Background ====================
         const matrixCanvas = document.getElementById('matrix-canvas');
         const ctx = matrixCanvas.getContext('2d');
-        
+
         matrixCanvas.width = window.innerWidth;
         matrixCanvas.height = window.innerHeight;
-        
+
         const chars = '0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0101010101';
         const fontSize = 14;
         const columns = matrixCanvas.width / fontSize;
         const drops = [];
-        
+
         for (let i = 0; i < columns; i++) {
             drops[i] = Math.random() * -100;
         }
-        
+
         function drawMatrix() {
             ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
             ctx.fillRect(0, 0, matrixCanvas.width, matrixCanvas.height);
-            
+
             ctx.fillStyle = '#00ff00';
             ctx.font = fontSize + 'px JetBrains Mono';
-            
+
             for (let i = 0; i < drops.length; i++) {
                 const char = chars[Math.floor(Math.random() * chars.length)];
                 const x = i * fontSize;
                 const y = drops[i] * fontSize;
-                
+
                 // Gradient green effect
                 const brightness = Math.random();
                 if (brightness > 0.9) {
@@ -1027,18 +1027,18 @@
                 } else {
                     ctx.fillStyle = '#00aa00';
                 }
-                
+
                 ctx.fillText(char, x, y);
-                
+
                 if (y > matrixCanvas.height && Math.random() > 0.975) {
                     drops[i] = 0;
                 }
                 drops[i]++;
             }
         }
-        
+
         setInterval(drawMatrix, 50);
-        
+
         // Resize handler
         window.addEventListener('resize', () => {
             matrixCanvas.width = window.innerWidth;
@@ -1051,28 +1051,28 @@
         const cursorTrail = document.getElementById('cursorTrail');
         let mouseX = 0, mouseY = 0;
         let trailX = 0, trailY = 0;
-        
+
         document.addEventListener('mousemove', (e) => {
             mouseX = e.clientX;
             mouseY = e.clientY;
             cursorDot.style.left = mouseX - 3 + 'px';
             cursorDot.style.top = mouseY - 3 + 'px';
         });
-        
+
         function updateCursor() {
             // Main cursor follows with slight delay
             cursor.style.left = mouseX - 10 + 'px';
             cursor.style.top = mouseY - 10 + 'px';
-            
+
             // Trail follows with more delay for trail effect
             trailX += (mouseX - trailX) * 0.2;
             trailY += (mouseY - trailY) * 0.2;
             cursorTrail.style.left = trailX - 15 + 'px';
             cursorTrail.style.top = trailY - 15 + 'px';
-            
+
             requestAnimationFrame(updateCursor);
         }
-        
+
         // Color cycle for cursor
         let hue = 0;
         function cycleCursorColor() {
@@ -1081,10 +1081,10 @@
             cursorTrail.style.background = `radial-gradient(circle, hsla(${hue}, 100%, 50%, 0.3) 0%, transparent 70%)`;
             requestAnimationFrame(cycleCursorColor);
         }
-        
+
         updateCursor();
         cycleCursorColor();
-        
+
         // Hide default cursor on desktop
         if (window.matchMedia('(pointer: fine)').matches) {
             document.body.style.cursor = 'none';
@@ -1183,21 +1183,21 @@
             trc20Img.onerror = function() {
                 trc20Img.style.display = 'none';
             };
-            trc20Img.src = 'trc20-qr.jpg.png';
+            trc20Img.src = 'trc20-qqr.jpg.jpg';
             trc20Img.onerror = function() {
                 trc20Img.src = 'trc20-qr.png';
                 trc20Img.onerror = function() {
                     trc20Img.style.display = 'none';
                 };
             };
-
+            
             erc20Img.onerror = function() {
                 erc20Img.src = 'erc20-qr.png';
                 erc20Img.onerror = function() {
                     erc20Img.style.display = 'none';
                 };
             };
-            erc20Img.src = 'erc20-qr.jpg.png';
+            erc20Img.src = 'erc20-qqr.jpg.jpg';
         });
 
         // Close modal on overlay click
